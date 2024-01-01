@@ -3,17 +3,20 @@ const serve = require("electron-serve");
 const fs = require("fs");
 const path = require("path");
 const Store = require('electron-store')
+const { autoUpdater } = require('electron-updater')
 
 const appServe = app.isPackaged ? serve({
   directory: path.join(__dirname, "../out")
 }) : null;
 
 let win
+let helpWindow
 let store = new Store({ accessPropertiesByDotNotation: false })
 const createWindow = () => {
   win = new BrowserWindow({
     width: 800,
     height: 600,
+    icon: path.join(__dirname, "../resources/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
@@ -46,6 +49,12 @@ const createWindow = () => {
     //   win.show()
 
     // })
+
+    win.on('closed', () => {
+      if (helpWindow) {
+        helpWindow.close()
+      }
+    })
   }
 }
 
@@ -56,20 +65,23 @@ const getdata = async (e, d) => {
 app.on("ready", () => {
   console.log(path.join(__dirname, "main.js"))
 
+  autoUpdater.checkForUpdatesAndNotify()
 
   ipcMain.handle('store', getdata)
   createWindow();
 
-  for (let i in store.store) {
-    if (store.store[i].status === true) {
-      shell.openPath(store.store[i].path).catch(err => {
-        console.error(err);
-      }).then(res => {
-        console.log(res)
-      })
-    }
+  // for (let i in store.store) {
+  //   if (store.store[i].status === true) {
+  //     shell.openPath(store.store[i].path).catch(err => {
+  //       console.error(err);
+  //     }).then(res => {
+  //       console.log(res)
+  //     })
+  //   }
 
-  }
+  // }
+
+
 
 
 
@@ -77,8 +89,9 @@ app.on("ready", () => {
 
 
 app.setLoginItemSettings({
-  openAtLogin: false,
-  path: app.getPath('exe')
+  openAtLogin: true,
+  path: app.getPath('exe'),
+
 
 })
 
@@ -87,6 +100,7 @@ app.setLoginItemSettings({
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+
   }
 });
 
@@ -158,7 +172,7 @@ ipcMain.on('runfile', (e, d) => {
 
 
 ipcMain.on('open-help-window', (e, d) => {
-  const helpWindow = new BrowserWindow({
+  helpWindow = new BrowserWindow({
     width: 300,
     height: 400,
     webPreferences: {
@@ -168,7 +182,12 @@ ipcMain.on('open-help-window', (e, d) => {
     autoHideMenuBar: true,
   })
 
-  helpWindow.loadURL("http://localhost:3000/help");
+  if (app.isPackaged) {
+    helpWindow.loadURL(`app://-/#/help`)
+  }
+  else {
+    helpWindow.loadURL(`http://localhost:3000/help`)
+  }
 
 
 
