@@ -33,7 +33,7 @@
       ]
     }
   },
-  "repository": "",
+  "repository": "https://github.com/mdhira-ai/batchwork",
   "license": "MIT",
   "publish": {
     "provider": "github",
