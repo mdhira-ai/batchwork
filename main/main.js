@@ -2,16 +2,20 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const serve = require("electron-serve");
 const fs = require("fs");
 const path = require("path");
-const Store = require('electron-store')
-const { autoUpdater } = require('electron-updater')
+const Store = require("electron-store");
+const { autoUpdater } = require("electron-updater");
 
-const appServe = app.isPackaged ? serve({
-  directory: path.join(__dirname, "../out")
-}) : null;
+const appServe = app.isPackaged
+  ? serve({
+    directory: path.join(__dirname, "../out"),
+  })
+  : null;
 
-let win
-let helpWindow
-let store = new Store({ accessPropertiesByDotNotation: false })
+let win;
+let helpWindow;
+let abooutWindow
+let store = new Store({ accessPropertiesByDotNotation: false });
+const startupstore = new Store({ accessPropertiesByDotNotation: false });
 const createWindow = () => {
   win = new BrowserWindow({
     width: 800,
@@ -21,14 +25,9 @@ const createWindow = () => {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
 
-
       enableRemoteModule: true,
-
-
-
     },
     autoHideMenuBar: true,
-
   });
 
   if (app.isPackaged) {
@@ -49,71 +48,66 @@ const createWindow = () => {
     //   win.show()
 
     // })
-
-    win.on('closed', () => {
-      if (helpWindow) {
-        helpWindow.close()
-      }
-    })
   }
-}
+
+  win.on("closed", () => {
+    win = null;
+  });
+};
 
 const getdata = async (e, d) => {
-  return store.store
+  return store.store;
+};
+
+const isstartup = async (e, d) => {
+  return startupstore.get("startup");
 }
 
 app.on("ready", () => {
-  console.log(path.join(__dirname, "main.js"))
+  // console.log(path.join(__dirname, "main.js"))
 
-  autoUpdater.checkForUpdatesAndNotify()
+  ipcMain.handle("store", getdata);
+  ipcMain.handle("isstartup", isstartup);
 
-  ipcMain.handle('store', getdata)
   createWindow();
 
-  // for (let i in store.store) {
-  //   if (store.store[i].status === true) {
-  //     shell.openPath(store.store[i].path).catch(err => {
-  //       console.error(err);
-  //     }).then(res => {
-  //       console.log(res)
-  //     })
-  //   }
+  autoUpdater.checkForUpdatesAndNotify({
+    title: "Update Available",
+    body: "A new version of the app is available. Restart you application !",
+  });
 
-  // }
+  for (let i in store.store) {
+    if (store.store[i].status === true) {
+      shell.openPath(store.store[i].path).catch(err => {
+        console.error(err);
+      }).then(res => {
+        console.log(res)
+      })
+    }
 
-
-
+  }
 
 
 });
 
-
-app.setLoginItemSettings({
-  openAtLogin: true,
-  path: app.getPath('exe'),
-
-
-})
-
-
+// app.setLoginItemSettings({
+//   openAtLogin: startupstore.get("startup"),
+//   path: app.getPath("exe"),
+// });
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
-
   }
 });
 
-
-
 // Handle file upload
-ipcMain.on('open-file-dialog', (event, data) => {
-
-
-  dialog.showOpenDialog(win, {
-    properties: ['openFile'],
-  })
-    .then(result => {
+ipcMain.on("open-file-dialog", (event, data) => {
+  dialog
+    .showOpenDialog(win, {
+      properties: ["openFile"],
+    })
+    .then((result) => {
       if (!result.canceled) {
         // get the file size
         const stats = fs.statSync(result.filePaths[0]);
@@ -127,73 +121,110 @@ ipcMain.on('open-file-dialog', (event, data) => {
           formattedSize = (fileSizeInBytes / (1024 * 1024)).toFixed(2) + " MB";
         }
 
-
-
-        event.sender.send('selected-file', {
+        event.sender.send("selected-file", {
           file_name: path.basename(result.filePaths[0]),
           size: formattedSize,
-          path: result.filePaths[0]
-
+          path: result.filePaths[0],
         });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
     });
 });
 
-
-ipcMain.on('runfile', (e, d) => {
-
-
+ipcMain.on("runfile", (e, d) => {
   if (d.status == false) {
-    store.delete(d.file_name)
-
-  }
-  else {
+    store.delete(d.file_name);
+  } else {
     store.set(d.file_name, {
       path: d.path,
       size: d.size,
-      status: d.status
-
-    })
+      status: d.status,
+    });
   }
 
-  e.sender.send('msg', 'settings saved')
-
+  e.sender.send("msg", "settings saved");
 
   // const filepath = store.get()
-  console.log(store.store)
+  console.log(store.store);
+});
 
-
-
-
-})
-
-
-ipcMain.on('open-help-window', (e, d) => {
+ipcMain.on("open-help-window", (e, d) => {
   helpWindow = new BrowserWindow({
-    width: 300,
+    width: 400,
     height: 400,
+    icon: path.join(__dirname, "../resources/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
+      enableRemoteModule: true,
     },
     autoHideMenuBar: true,
-  })
+    parent: win,
+    modal: true,
+    resizable: false,
+    movable: false,
+  });
+
+  // helpWindow.webContents.openDevTools()
+
+
 
   if (app.isPackaged) {
-    helpWindow.loadURL(`app://-/#/help`)
+
+    helpWindow.loadURL(`app://./help.html`);
+
   }
   else {
     helpWindow.loadURL(`http://localhost:3000/help`)
   }
+});
 
 
+ipcMain.on("startup", (e, d) => {
+  console.log(d);
+  startupstore.set("startup", d);
+  console.log(startupstore.store);
 
-  helpWindow.webContents.on("did-fail-load", (e, code, desc) => {
-    helpWindow.webContents.reloadIgnoringCache();
+  app.setLoginItemSettings({
+    openAtLogin: d,
+    path: app.getPath("exe"),
   });
+});
+
+
+ipcMain.on('removefile', (e, d) => {
+  store.delete(d.file_name)
+  console.log(store.store)
+})
+
+
+ipcMain.on('open-about-window', (e, d) => {
+  abooutWindow = new BrowserWindow({
+    width: 400,
+    height: 400,
+    icon: path.join(__dirname, "../resources/icon.png"),
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: true,
+      enableRemoteModule: true,
+    },
+    autoHideMenuBar: true,
+    parent: win,
+    modal: true,
+    resizable: false,
+  });
+
+
+  if (app.isPackaged) {
+    abooutWindow.loadURL(`app://./about.html`);
+  }
+
+  else {
+    abooutWindow.loadURL(`http://localhost:3000/about`)
+  }
 
 }
 )
+

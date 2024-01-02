@@ -11,6 +11,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { useEffect, useState } from "react";
+import { FcDeleteDatabase } from "react-icons/fc";
 
 
 const MyTab = ({
@@ -41,14 +42,18 @@ const MyTab = ({
     useEffect(() => {
         window.electronAPI.invoke('store').then(res => {
 
-            const mappedData = Object.entries(res).map(([file_name, item]) => ({
-                file_name,
-                size: item.size,
-                checked: item.status,
-                path: item.path
-            }));
+            const mappedData = Object.entries(res).map(([file_name, item]) => {
+                if (file_name !== 'startup') {
+                    return {
+                        file_name,
+                        size: item.size,
+                        checked: item.status,
+                        path: item.path
+                    };
+                }
+            }).filter(Boolean);
 
-            setdata(mappedData)
+            setdata(mappedData);
 
         })
 
@@ -59,12 +64,12 @@ const MyTab = ({
 
     useEffect(() => {
 
-        window.electronAPI.on('msg' , (e,d ) => {
-           alert(d)
-        
+        window.electronAPI.on('msg', (e, d) => {
+            alert(d)
+
         })
 
-    },[])
+    }, [])
 
 
 
@@ -99,6 +104,18 @@ const MyTab = ({
 
     }
 
+    function handleRemoveClicked(item) {
+        const newData = [...data];
+        const index = newData.findIndex((d) => d.file_name === item.file_name);
+        newData.splice(index, 1);
+        setdata(newData);
+
+        window.electronAPI.send('removefile', {
+            file_name: item.file_name,
+        })
+    }
+
+
     return (
         <>
             <Table>
@@ -107,6 +124,7 @@ const MyTab = ({
                         <TableHead className='pl-5'>File name</TableHead>
                         <TableHead className="text-center">Size</TableHead>
                         <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">Action</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,13 +153,27 @@ const MyTab = ({
                                     />
                                 </div>
                             </TableCell>
+
+                            <TableCell className="text-center">
+                                <div className="flex flex-col items-center">
+
+                                    <FcDeleteDatabase
+                                        onClick={() => handleRemoveClicked(item)}
+
+                                        className="cursor-pointer"
+                                        size={24}
+
+                                    />
+
+                                </div>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
             <div className="bg-transparent w-screen flex flex-col pr-4 items-end mt-4">
                 <button
-                    className="bg-black px-4 py-3 text-white w-44 hover:bg-slate-700"
+                    className="bg-fuchsia-600 px-4 py-3 text-white w-44 hover:bg-slate-700"
                     onClick={handleButtonClick}
                 >
                     Run as startup

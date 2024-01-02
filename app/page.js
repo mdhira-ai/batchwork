@@ -19,6 +19,8 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar"
 import { MenubarGroup } from "@radix-ui/react-menubar"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 export default function page() {
@@ -26,6 +28,7 @@ export default function page() {
   const [data, setdata] = useState([])
 
   const [imagepath, setimagepath] = useState(null)
+  const navigation = useRouter()
 
   useEffect(() => {
     const handleSelectedFile = (e, path) => {
@@ -68,7 +71,16 @@ export default function page() {
   }
 
   function openHelpWindow() {
+
+    // navigation.push('/help')
+
+
     window.electronAPI.send('open-help-window')
+  }
+
+
+  function aboutme() {
+    window.electronAPI.send('open-about-window')
   }
   
 
@@ -110,18 +122,21 @@ export default function page() {
 
         <MenubarMenu>
 
-          <MenubarTrigger>About</MenubarTrigger>
+          <MenubarTrigger>
+            Settings
+          </MenubarTrigger>
 
           <MenubarContent >
-            <MenubarItem>
+            <MenubarItem onClick={openHelpWindow}>
               Preferences
             </MenubarItem>
 
             <MenubarSeparator />
 
-            <MenubarItem onClick={openHelpWindow}>
-              Help
-            </MenubarItem>
+              <MenubarItem onClick={aboutme}>
+
+                About
+              </MenubarItem>
           </MenubarContent>
 
         </MenubarMenu>
