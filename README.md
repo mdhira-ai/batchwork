@@ -1,36 +1,241 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
-
 ## Getting Started
 
-First, run the development server:
+Follow these instructions to set up and run the project.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Prerequisites
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ensure you have the following installed on your machine:
+- Node.js (v14.x or later)
+- Yarn (v1.x or later) or npm (v6.x or later)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Installation
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+1. **Create a Next.js application:**
 
-## Learn More
+   Using Yarn:
+   ```bash
+   yarn create next-app
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+   Using npm:
+   ```bash
+   npx create-next-app@latest
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Install development dependencies:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+   Using Yarn:
+   ```bash
+   yarn add --dev electron electron-builder concurrently
+   ```
 
-## Deploy on Vercel
+   Using npm:
+   ```bash
+   npm install electron electron-builder concurrently --save-dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Install `electron-serve`:**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+   Using Yarn:
+   ```bash
+   yarn add electron-serve
+   ```
+
+   Using npm:
+   ```bash
+   npm install electron-serve
+   ```
+
+### Project Structure
+
+1. **Update `package.json` to include the following:**
+   ```json
+   {
+     "main": "main/main.js",
+     "author": "Md Habibor Rahman Hira",
+     "description": "Boreal software company",
+     "scripts": {
+       "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev\" \"electron .\"",
+       "build": "next build && electron-builder"
+     }
+   }
+   ```
+
+2. **Create `next.config.js`:**
+   ```js
+   const nextConfig = {
+     output: "export",
+     images: {
+       unoptimized: true
+     }
+   };
+
+   module.exports = nextConfig;
+   ```
+
+3. **Create `main/main.js`:**
+   ```js
+   const { app, BrowserWindow } = require("electron");
+   const path = require("path");
+
+   let appServe;
+
+   if (app.isPackaged) {
+     (async () => {
+       appServe = (await import('electron-serve')).default({
+         directory: path.join(__dirname, "../out")
+       });
+     })();
+   }
+
+   const createWindow = () => {
+     const win = new BrowserWindow({
+       width: 800,
+       height: 600,
+       webPreferences: {
+         preload: path.join(__dirname, "preload.js")
+       }
+     });
+
+     if (app.isPackaged) {
+       appServe(win).then(() => {
+         win.loadURL("app://-");
+       });
+     } else {
+       win.loadURL("http://localhost:3000");
+       win.webContents.openDevTools();
+       win.webContents.on("did-fail-load", (e, code, desc) => {
+         win.webContents.reloadIgnoringCache();
+       });
+     }
+   };
+
+   app.on("ready", () => {
+     createWindow();
+   });
+
+   app.on("window-all-closed", () => {
+     if (process.platform !== "darwin") {
+       app.quit();
+     }
+   });
+   ```
+
+4. **Create `main/preload.js`:**
+   ```js
+   const { contextBridge, ipcRenderer } = require("electron");
+
+   contextBridge.exposeInMainWorld("electronAPI", {
+     on: (channel, callback) => {
+       ipcRenderer.on(channel, callback);
+     },
+     send: (channel, args) => {
+       ipcRenderer.send(channel, args);
+     }
+   });
+   ```
+
+5. **Create `electron-builder.yaml`:**
+   ```yaml
+   appId: "app.Borealsoftwarecompany.com"
+   productName: "Boreal software company"
+   copyright: "Copyright (c) 2023 Boreal software company"
+   win:
+     target: ["dir", "portable", "zip"]
+     icon: "resources/icon.ico"
+   linux:
+     target: ["dir", "appimage", "zip"]
+     icon: "resources/icon.png"
+   mac:
+     target: ["dir", "dmg", "zip"]
+     icon: "resources/icon.icns"
+   ```
+
+### Adding Updates
+
+1. **Install `electron-updater`:**
+
+   Using Yarn:
+   ```bash
+   yarn add electron-updater
+   ```
+
+   Using npm:
+   ```bash
+   npm install electron-updater
+   ```
+
+2. **Update `package.json` to include the following for building and publishing:**
+   ```json
+   {
+     "build": {
+       "appId": "com.Borealsoftwarecompany.myappname",
+       "files": [
+         "!node_modules"
+       ],
+       "nsis": {
+         "oneClick": false,
+         "perMachine": true
+       },
+       "productName": "myappname",
+       "win": {
+         "icon": "/resources/icon.png",
+         "publish": [
+           "github"
+         ]
+       },
+       "linux": {
+         "icon": "/resources/icon.png",
+         "publish": [
+           "github"
+         ]
+       }
+     },
+     "electronBuilder": {
+       "asar": true,
+       "compression": "maximum"
+     },
+     "repository": "https://github.com/mdhira-ai/batchwork",
+     "license": "MIT",
+     "publish": {
+       "provider": "github",
+       "releaseType": "release"
+     }
+   }
+   ```
+
+## Running the Application
+
+1. **Development:**
+   ```bash
+   yarn dev
+   ```
+
+   or
+
+   ```bash
+   npm run dev
+   ```
+
+2. **Build:**
+   ```bash
+   yarn build
+   ```
+
+   or
+
+   ```bash
+   npm run build
+   ```
+
+## Author
+
+- **Md Habibor Rahman Hira** - *Initial work* - [Habib Software Industry](https://github.com/mdhira-ai)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Special thanks to the Electron and Next.js communities for their invaluable resources and support.
