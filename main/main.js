@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, webContents } = require("electron");
 const serve = require("electron-serve");
 const fs = require("fs");
 const path = require("path");
@@ -7,13 +7,13 @@ const { autoUpdater } = require("electron-updater");
 
 const appServe = app.isPackaged
   ? serve({
-    directory: path.join(__dirname, "../out"),
-  })
+      directory: path.join(__dirname, "../out"),
+    })
   : null;
 
 let win;
 let helpWindow;
-let abooutWindow
+let abooutWindow;
 let store = new Store({ accessPropertiesByDotNotation: false });
 const startupstore = new Store({ accessPropertiesByDotNotation: false });
 const createWindow = () => {
@@ -36,7 +36,7 @@ const createWindow = () => {
     });
   } else {
     win.loadURL("http://localhost:3000");
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
     win.webContents.on("did-fail-load", (e, code, desc) => {
       win.webContents.reloadIgnoringCache();
     });
@@ -61,7 +61,7 @@ const getdata = async (e, d) => {
 
 const isstartup = async (e, d) => {
   return startupstore.get("startup");
-}
+};
 
 app.on("ready", () => {
   // console.log(path.join(__dirname, "main.js"))
@@ -76,18 +76,39 @@ app.on("ready", () => {
     body: "A new version of the app is available. Restart you application !",
   });
 
-  for (let i in store.store) {
-    if (store.store[i].status === true) {
-      shell.openPath(store.store[i].path).catch(err => {
-        console.error(err);
-      }).then(res => {
-        console.log(res)
-      })
+  try {
+    for (let i in store.store) {
+      if (store.store[i].status === true) {
+        if(fs.existsSync(store.store[i].path)){
+          console.log('file exist')
+          shell
+            .openPath(store.store[i].path)
+            .catch((err) => {
+              console.error(err);
+            })
+            .then((res) => {
+              console.log(res);
+            });
+        }
+        else{
+          dialog.showMessageBox(
+            {
+              type: "error",
+              buttons: ["Ok"],
+              title: "File Not Found check the file path",
+              message: "File Not Found check the file path",
+            },
+            (response) => {
+              console.log(response);
+            }
+          )
+        }
+
+      }
     }
-
+  } catch (err) {
+    console.log(err);
   }
-
-
 });
 
 // app.setLoginItemSettings({
@@ -169,18 +190,12 @@ ipcMain.on("open-help-window", (e, d) => {
 
   // helpWindow.webContents.openDevTools()
 
-
-
   if (app.isPackaged) {
-
     helpWindow.loadURL(`app://./help.html`);
-
-  }
-  else {
-    helpWindow.loadURL(`http://localhost:3000/help`)
+  } else {
+    helpWindow.loadURL(`http://localhost:3000/help`);
   }
 });
-
 
 ipcMain.on("startup", (e, d) => {
   console.log(d);
@@ -193,14 +208,12 @@ ipcMain.on("startup", (e, d) => {
   });
 });
 
+ipcMain.on("removefile", (e, d) => {
+  store.delete(d.file_name);
+  console.log(store.store);
+});
 
-ipcMain.on('removefile', (e, d) => {
-  store.delete(d.file_name)
-  console.log(store.store)
-})
-
-
-ipcMain.on('open-about-window', (e, d) => {
+ipcMain.on("open-about-window", (e, d) => {
   abooutWindow = new BrowserWindow({
     width: 400,
     height: 400,
@@ -216,15 +229,9 @@ ipcMain.on('open-about-window', (e, d) => {
     resizable: false,
   });
 
-
   if (app.isPackaged) {
     abooutWindow.loadURL(`app://./about.html`);
+  } else {
+    abooutWindow.loadURL(`http://localhost:3000/about`);
   }
-
-  else {
-    abooutWindow.loadURL(`http://localhost:3000/about`)
-  }
-
-}
-)
-
+});
