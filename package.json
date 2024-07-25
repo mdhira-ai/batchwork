@@ -1,6 +1,6 @@
 {
-  "name": "electronjs.nextjs",
-  "version": "0.1.0",
+  "name": "batchwork",
+  "version": "2.0.12",
   "private": true,
   "main": "main/main.js",
   "author": "Md Habibor Rahman Hira",
@@ -12,26 +12,62 @@
     "build2": "next build",
     "start": "next start",
     "lint": "next lint"
-
   },
-
+  "build": {
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true
+    },
+    "appId": "com.habib.batchwork",
+    "productName": "Batchwork",
+    "win": {
+      "icon": "/resources/icon.png",
+      "publish": [
+        "github"
+      ]
+    },
+    "linux": {
+      "icon": "/resources/icon.png",
+      "publish": [
+        "github"
+      ]
+    }
+  },
+  "repository": "https://github.com/mdhira-ai/batchwork",
+  "license": "MIT",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
+  },
   "dependencies": {
+    "@prisma/client": "^5.17.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
     "electron-serve": "^2.0.0",
-    "next": "14.2.4",
+    "electron-updater": "^6.2.1",
+    "eslint": "^8.57.0",
+    "lucide-react": "^0.414.0",
+    "next": "14.2.5",
+    "next-themes": "^0.3.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "concurrently": "^8.2.2",
-    "electron": "^31.1.0",
+    "electron": "^31.2.1",
     "electron-builder": "^24.13.3",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.4",
+    "eslint-config-next": "14.2.5",
     "postcss": "^8",
-    "tailwindcss": "^3.4.1",
+    "prisma": "^5.17.0",
+    "tailwindcss": "^3.4.6",
     "typescript": "^5"
   }
 }

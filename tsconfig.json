@@ -21,6 +21,8 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "main/main.js", "main/preload.js", "main/crud.js"],
   "exclude": ["node_modules"]
 }
+
+

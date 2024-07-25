@@ -1,15 +1,17 @@
-appId: "app.borealsoftwarecompany.com"
-productName: "Boreal software company"
-copyright: "Copyright (c) 2023 Boreal software company"
+appId: "app.habib.batchwork"
+productName: "Habib software"
+copyright: "Copyright (c) 2023 Habib software industry"
+
+
 win:
   target: ["dir", "portable", "zip"]
   icon: "resources/icon.ico"
+
 linux:
   target: ["dir", "appimage", "zip"]
   icon: "resources/icon.png"
+
 mac:
   target: ["dir", "dmg", "zip"]
   icon: "resources/icon.icns"
-
-
 
